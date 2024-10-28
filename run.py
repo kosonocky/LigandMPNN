@@ -46,6 +46,8 @@ def main(args) -> None:
         os.makedirs(base_folder + "seqs", exist_ok=True)
     if not os.path.exists(base_folder + "backbones"):
         os.makedirs(base_folder + "backbones", exist_ok=True)
+    if not os.path.exists(base_folder + "backbone_embeddings"):
+        os.makedirs(base_folder + "backbone_embeddings", exist_ok=True)
     if not os.path.exists(base_folder + "packed"):
         os.makedirs(base_folder + "packed", exist_ok=True)
     if args.save_stats:
@@ -416,12 +418,20 @@ def main(args) -> None:
             loss_list = []
             loss_per_residue_list = []
             loss_XY_list = []
+            backbone_embeddings = []
             for _ in range(args.number_of_batches):
                 feature_dict["randn"] = torch.randn(
                     [feature_dict["batch_size"], feature_dict["mask"].shape[1]],
                     device=device,
                 )
+                if args.get_backbone_embeddings:
+                    # just gets h_V (vertex)
+                    backbone_embeddings.append(
+                        model.get_backbone_embeddings(feature_dict)
+                    )
+
                 output_dict = model.sample(feature_dict)
+                
 
                 # compute confidence scores
                 loss, loss_per_residue = get_score(
@@ -457,6 +467,13 @@ def main(args) -> None:
             loss_XY_stack = torch.cat(loss_XY_list, 0)
             rec_mask = feature_dict["mask"][:1] * feature_dict["chain_mask"][:1]
             rec_stack = get_seq_rec(feature_dict["S"][:1], S_stack, rec_mask)
+
+            if args.get_backbone_embeddings:
+                backbone_embeddings = torch.cat(backbone_embeddings, 0)
+                torch.save(
+                    backbone_embeddings,
+                    base_folder + "backbone_embeddings/" + name + ".pt",
+                )
 
             native_seq = "".join(
                 [restype_int_to_str[AA] for AA in feature_dict["S"][0].cpu().numpy()]
@@ -982,6 +999,13 @@ if __name__ == "__main__":
         type=int,
         default=1,
         help="1-pack side chains using ligand context, 0 - do not use it.",
+    )
+
+    argparser.add_argument(
+        "--get_backbone_embeddings",
+        type=int,
+        default=0,
+        help="save backbone embeddings",
     )
 
     args = argparser.parse_args()
