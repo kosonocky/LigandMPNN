@@ -178,43 +178,6 @@ class ProteinMPNN(torch.nn.Module):
         return h_V, h_E, E_idx
 
     def get_backbone_embeddings(self, feature_dict):
-        # made by Clay, 10/28/24
-        
-        # xyz_37 = feature_dict["xyz_37"] #[B,L,37,3] - xyz coordinates for all atoms if needed
-        # xyz_37_m = feature_dict["xyz_37_m"] #[B,L,37] - mask for all coords
-        # Y = feature_dict["Y"] #[B,L,num_context_atoms,3] - for ligandMPNN coords
-        # Y_t = feature_dict["Y_t"] #[B,L,num_context_atoms] - element type
-        # Y_m = feature_dict["Y_m"] #[B,L,num_context_atoms] - mask
-        # X = feature_dict["X"] #[B,L,4,3] - backbone xyz coordinates for N,CA,C,O
-        B_decoder = feature_dict["batch_size"]
-        S_true = feature_dict[
-            "S"
-        ]  # [B,L] - integer proitein sequence encoded using "restype_STRtoINT"
-        # R_idx = feature_dict["R_idx"] #[B,L] - primary sequence residue index
-        mask = feature_dict[
-            "mask"
-        ]  # [B,L] - mask for missing regions - should be removed! all ones most of the time
-        chain_mask = feature_dict[
-            "chain_mask"
-        ]  # [B,L] - mask for which residues need to be fixed; 0.0 - fixed; 1.0 - will be designed
-        bias = feature_dict["bias"]  # [B,L,21] - amino acid bias per position
-        # chain_labels = feature_dict["chain_labels"] #[B,L] - integer labels for chain letters
-        randn = feature_dict[
-            "randn"
-        ]  # [B,L] - random numbers for decoding order; only the first entry is used since decoding within a batch needs to match for symmetry
-        temperature = feature_dict[
-            "temperature"
-        ]  # float - sampling temperature; prob = softmax(logits/temperature)
-        symmetry_list_of_lists = feature_dict[
-            "symmetry_residues"
-        ]  # [[0, 1, 14], [10,11,14,15], [20, 21]] #indices to select X over length - L
-        symmetry_weights_list_of_lists = feature_dict[
-            "symmetry_weights"
-        ]  # [[1.0, 1.0, 1.0], [-2.0,1.1,0.2,1.1], [2.3, 1.1]]
-
-        B, L = S_true.shape
-        device = S_true.device
-
         h_V, h_E, E_idx = self.encode(feature_dict)
 
         return h_V
